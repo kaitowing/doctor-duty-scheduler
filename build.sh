@@ -21,10 +21,13 @@ mkdir -p "$BUILD_DIR/DEBIAN"
 mkdir -p "$BUILD_DIR/opt/$PACKAGE_NAME"
 mkdir -p "$BUILD_DIR/usr/share/applications"
 mkdir -p "$BUILD_DIR/usr/bin"
+mkdir -p "$BUILD_DIR/usr/share/pixmaps"
 
 # Copiar arquivos do aplicativo
 cp main.py "$BUILD_DIR/opt/$PACKAGE_NAME/"
 cp requirements.txt "$BUILD_DIR/opt/$PACKAGE_NAME/"
+cp web.png "$BUILD_DIR/opt/$PACKAGE_NAME/"
+cp web.png "$BUILD_DIR/usr/share/pixmaps/plantao-hospital.png"
 
 # Criar script wrapper
 cat > "$BUILD_DIR/opt/$PACKAGE_NAME/run.sh" << 'EOF'
@@ -78,7 +81,7 @@ Type=Application
 Name=Escalas de Plantão
 Comment=Sistema de gerenciamento de escalas hospitalares
 Exec=/opt/plantao-hospital/run.sh
-Icon=medical-appointment
+Icon=plantao-hospital
 Terminal=false
 Categories=Office;Medical;
 Keywords=hospital;plantao;escala;medico;
@@ -93,15 +96,16 @@ Priority: optional
 Architecture: $ARCH
 Depends: python3 (>= 3.8), python3-venv, python3-pip
 Maintainer: Arthur <seu-email@exemplo.com>
-Description: Sistema de Escalas de Plantão Hospitalar
- Aplicativo desktop para gerenciamento de escalas de plantões hospitalares.
+Description: Sistema de escalas de plantao hospitalar
+ Aplicativo desktop para montar e acompanhar escalas de plantao.
  .
- Recursos:
-  - Interface gráfica moderna e intuitiva
-  - Geração automática de calendário mensal
-  - Destaque para finais de semana
-  - Exportação para PDF e PNG
-  - Histórico de escalas
+ Funcionalidades:
+  - Interface grafica intuitiva (PyQt6)
+  - Gera automaticamente o calendario do mes
+  - Destaque para sexta, sabado e domingo
+  - Exporta tabelas para PDF e PNG
+  - Mantem historico local de escalas
+
 EOF
 
 # Criar script postinst (após instalação)
