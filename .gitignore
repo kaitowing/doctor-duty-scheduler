@@ -16,5 +16,6 @@ releases/
 escalas/*.json
 *.pdf
 *.png
+!web.png
 .vscode/
 .idea/

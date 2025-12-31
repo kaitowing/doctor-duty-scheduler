@@ -29,20 +29,6 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: releases/*.deb
-        body: |
-          ## Sistema de Escalas de Plantão Hospitalar
-          
-          ### Instalação
-          ```bash
-          sudo dpkg -i plantao-hospital_1.0.0_all.deb
-          ```
-          
-          ### Recursos
-          - Interface gráfica moderna (PyQt6)
-          - Geração automática de calendário mensal
-          - Exportação para PDF e PNG
-          - Histórico de escalas
-          
-          Execute `plantao-hospital` ou procure "Escalas de Plantão" no menu de aplicativos.
+        body_path: RELEASE_NOTES.md
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
