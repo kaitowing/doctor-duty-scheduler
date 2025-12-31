@@ -1,16 +1,14 @@
 import sys
 import json
-import os
 from datetime import datetime, date
-from calendar import monthrange, day_name
+from calendar import monthrange
 from pathlib import Path
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem,
                              QComboBox, QLabel, QMessageBox, QDialog, QListWidget,
-                             QFileDialog, QHeaderView, QSpinBox)
-from PyQt6.QtCore import Qt, QDate
-from PyQt6.QtGui import QColor, QFont, QPainter, QPageSize
-from PyQt6.QtPrintSupport import QPrinter
+                             QFileDialog, QHeaderView, QSpinBox, QMenu)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor, QFont
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -109,6 +107,8 @@ class PlantaoApp(QMainWindow):
         
         Path("escalas").mkdir(exist_ok=True)
         
+        self.custom_holidays = set()
+        
         self.init_ui()
         
     def init_ui(self):
@@ -195,6 +195,8 @@ class PlantaoApp(QMainWindow):
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         
         self.table.setAlternatingRowColors(True)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.show_context_menu)
         self.table.setStyleSheet("""
             QTableWidget {
                 gridline-color: #d0d0d0;
@@ -276,6 +278,62 @@ class PlantaoApp(QMainWindow):
         
         self.gerar_tabela()
     
+    def show_context_menu(self, position):
+        row = self.table.rowAt(position.y())
+        if row < 0:
+            return
+        
+        menu = QMenu()
+        date_item = self.table.item(row, 0)
+        if not date_item:
+            return
+        
+        date_text = date_item.text()
+        is_holiday = date_text in self.custom_holidays
+        
+        if is_holiday:
+            action = menu.addAction("❌ Remover como feriado")
+        else:
+            action = menu.addAction("⭐ Marcar como feriado")
+        
+        result = menu.exec(self.table.viewport().mapToGlobal(position))
+        
+        if result == action:
+            if is_holiday:
+                self.custom_holidays.discard(date_text)
+            else:
+                self.custom_holidays.add(date_text)
+            self.aplicar_destaque_linha(row)
+    
+    def aplicar_destaque_linha(self, row):
+        date_item = self.table.item(row, 0)
+        dia_item = self.table.item(row, 1)
+        
+        if not date_item or not dia_item:
+            return
+        
+        date_text = date_item.text()
+        dia_semana = date_text.split('/')[0]
+        
+        mes = self.mes_combo.currentData()
+        ano = self.ano_spin.value()
+        dia_num = int(dia_semana)
+        data_obj = date(ano, mes, dia_num)
+        dia_semana_num = data_obj.weekday()
+        
+        is_weekend = dia_semana_num in [4, 5, 6] or date_text in self.custom_holidays
+        cor_fundo_azul = QColor(138, 180, 248)
+        
+        for col in range(5):
+            item = self.table.item(row, col)
+            if item:
+                if is_weekend:
+                    item.setBackground(cor_fundo_azul)
+                    item.setForeground(QColor(Qt.GlobalColor.black))
+                else:
+                    item.setData(Qt.ItemDataRole.BackgroundRole, None)
+                    item.setData(Qt.ItemDataRole.ForegroundRole, None)
+    
     def gerar_tabela(self):
         mes = self.mes_combo.currentData()
         ano = self.ano_spin.value()
@@ -295,7 +353,8 @@ class PlantaoApp(QMainWindow):
             item_data.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             item_dia.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             
-            is_weekend = dia_semana in [4, 5, 6]
+            date_text = f"{dia:02d}/{mes:02d}/{ano}"
+            is_weekend = dia_semana in [4, 5, 6] or date_text in self.custom_holidays
             
             if is_weekend:
                 cor_fundo = QColor(138, 180, 248)
@@ -330,6 +389,7 @@ class PlantaoApp(QMainWindow):
         data = {
             'mes': mes,
             'ano': ano,
+            'feriados': list(self.custom_holidays),
             'escalas': []
         }
         
@@ -369,6 +429,7 @@ class PlantaoApp(QMainWindow):
         
         mes = data['mes']
         ano = data['ano']
+        self.custom_holidays = set(data.get('feriados', []))
         
         self.mes_combo.setCurrentIndex(mes - 1)
         self.ano_spin.setValue(ano)
@@ -452,7 +513,8 @@ class PlantaoApp(QMainWindow):
         
         for row in range(1, len(table_data)):
             dia_semana = table_data[row][1]
-            if dia_semana in ['Sexta', 'Sábado', 'Domingo']:
+            date_text = table_data[row][0]
+            if dia_semana in ['Sexta', 'Sábado', 'Domingo'] or date_text in self.custom_holidays:
                 style.add('BACKGROUND', (0, row), (-1, row), colors.HexColor('#8AB4F8'))
         
         table.setStyle(style)
@@ -531,7 +593,8 @@ class PlantaoApp(QMainWindow):
             x = margin
             
             dia_semana = self.table.item(row, 1).text() if self.table.item(row, 1) else ''
-            is_weekend = dia_semana in ['Sexta', 'Sábado', 'Domingo']
+            date_text = self.table.item(row, 0).text() if self.table.item(row, 0) else ''
+            is_weekend = dia_semana in ['Sexta', 'Sábado', 'Domingo'] or date_text in self.custom_holidays
             bg_color = '#8AB4F8' if is_weekend else ('#f5f5f5' if row % 2 == 0 else 'white')
             
             for col in range(5):

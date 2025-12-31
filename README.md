@@ -2,6 +2,10 @@
 
 Aplicativo desktop Linux para gerenciamento de escalas de plantões hospitalares.
 
+## Importante
+
+Aplicativo completamente desenvolvido usando inteligencia artificial.
+
 ## Recursos
 
 - Interface gráfica moderna e intuitiva (PyQt6)
